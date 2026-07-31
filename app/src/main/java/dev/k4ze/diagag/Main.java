@@ -2,7 +2,11 @@ package dev.k4ze.diagag;
 
 import android.util.Log;
 
+import java.net.NetworkInterface;
+import java.util.Collections;
+
 import de.robv.android.xposed.IXposedHookLoadPackage;
+import de.robv.android.xposed.XC_MethodHook;
 import de.robv.android.xposed.XC_MethodReplacement;
 import de.robv.android.xposed.XposedBridge;
 import de.robv.android.xposed.XposedHelpers;
@@ -12,9 +16,12 @@ import de.robv.android.xposed.callbacks.XC_LoadPackage.LoadPackageParam;
  * Dia-Gag — Xposed module for the My Dialog app (net.omobio.dialogsc).
  * Copyright (C) 2026 K4ZE DEV. Licensed under GNU GPL v3.0.
  *
- * Neutralises the app's two enforcement paths (mapped against 18.6.1):
- *   A) security.SecurityManager.performComprehensiveSecurityCheck facade, and
- *   B) the tracker.* / RootInfoCallable detectors called from MainActivity/Utils.
+ * Neutralises the anti-tamper of My Dialog 18.6.1 so it runs on rooted devices:
+ *   - security.SecurityManager facade + tracker.* / RootInfoCallable detectors;
+ *   - MainActivity$4.run() root/emulator/debug/hook detector set (N1,O1,...);
+ *   - MainActivity block handlers A1/U1 (toast + finish);
+ *   - RNDeviceInfo emulator report;
+ *   - a null-guard for the react-native-os NetworkInterface crash at RN init.
  */
 public class Main implements IXposedHookLoadPackage {
 
@@ -49,6 +56,44 @@ public class Main implements IXposedHookLoadPackage {
 
         // RootInfoCallable.a() returns Boolean; false = not rooted.
         force(cl, P + "support.lib.RootInfoCallable", "a", false);
+
+        // --- MainActivity native/Java detectors (18.6.1) ---
+        // MainActivity$4.run() evaluates these booleans on a background thread;
+        // any true -> B1()/A1() -> finish(). Force the whole set to false.
+        for (String m : new String[]{"N1", "O1", "J1", "E1", "L1", "D1",
+                "F1", "M1", "G1", "I1", "w1"}) {
+            force(cl, P + "MainActivity", m, false);
+        }
+        // Utils.e(Context) is part of the same detector set.
+        force(cl, P + "Utils", "e", false);
+
+        // --- MainActivity block handler (18.6.1) ---
+        // Both toast+exit paths (root, "security standards") funnel through
+        // MainActivity.A1(int) = show toast + finish(); U1(int) shows the toast.
+        // Neutralise both -> no block toast, no finish.
+        noop(cl, P + "MainActivity", "A1");
+        noop(cl, P + "MainActivity", "U1");
+
+        // --- RN layer (18.6.1) ---
+        // react-native-device-info emulator report -> false.
+        force(cl, "com.learnium.RNDeviceInfo.RNDeviceModule", "isEmulatorSync", false);
+
+        // Crash guard: react-native-os RNOS.getConstants() iterates
+        // NetworkInterface.getNetworkInterfaces(), which returns null on this
+        // device -> NPE that kills RN init. Return an empty enumeration instead.
+        try {
+            XposedHelpers.findAndHookMethod(NetworkInterface.class, "getNetworkInterfaces",
+                    new XC_MethodHook() {
+                        @Override
+                        protected void afterHookedMethod(MethodHookParam param) {
+                            if (param.getResult() == null) {
+                                param.setResult(Collections.emptyEnumeration());
+                            }
+                        }
+                    });
+        } catch (Throwable t) {
+            Log.w(TAG, "NetworkInterface guard failed", t);
+        }
     }
 
     /**
@@ -62,6 +107,16 @@ public class Main implements IXposedHookLoadPackage {
             XposedBridge.hookAllMethods(c, method, XC_MethodReplacement.returnConstant(value));
         } catch (Throwable t) {
             Log.w(TAG, "hook failed: " + clazz + "#" + method, t);
+        }
+    }
+
+    /** Turn every overload of {@code clazz#method} into a no-op. */
+    static void noop(ClassLoader cl, String clazz, String method) {
+        try {
+            Class<?> c = XposedHelpers.findClass(clazz, cl);
+            XposedBridge.hookAllMethods(c, method, XC_MethodReplacement.DO_NOTHING);
+        } catch (Throwable t) {
+            Log.w(TAG, "noop failed: " + clazz + "#" + method, t);
         }
     }
 }
