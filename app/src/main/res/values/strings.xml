@@ -1,0 +1,4 @@
+<resources>
+    <string name="module_name">Dia-Gag</string>
+    <string name="module_description">Bypass root / debug / integrity checks in the My Dialog app</string>
+</resources>
