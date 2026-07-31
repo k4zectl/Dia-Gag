@@ -2,5 +2,7 @@
 <resources>
     <string-array name="module_scope">
         <item>net.omobio.dialogsc</item>
+        <!-- phone process: lets the app read its OWN real IMSI (Android 10+ block) -->
+        <item>com.android.phone</item>
     </string-array>
 </resources>
