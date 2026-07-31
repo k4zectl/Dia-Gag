@@ -31,12 +31,6 @@ public class Main implements IXposedHookLoadPackage {
 
     @Override
     public void handleLoadPackage(final LoadPackageParam lpparam) {
-        // Phone process: unblock device-identifier reads for the target app so it
-        // reads its OWN real IMSI via the normal API (Android 10+ hides it).
-        if ("com.android.phone".equals(lpparam.packageName)) {
-            allowImsiReads(lpparam.classLoader);
-            return;
-        }
         if (!TARGET.equals(lpparam.packageName)) return;
         final ClassLoader cl = lpparam.classLoader;
         Log.d(TAG, "Attached to " + lpparam.packageName);
@@ -114,43 +108,6 @@ public class Main implements IXposedHookLoadPackage {
         } catch (Throwable t) {
             Log.w(TAG, "hook failed: " + clazz + "#" + method, t);
         }
-    }
-
-    /**
-     * In the phone process, make TelephonyPermissions grant the target app
-     * read access to device identifiers (IMSI/IMEI), so getSubscriberId returns
-     * the real value instead of null. Scoped strictly to net.omobio.dialogsc.
-     */
-    static void allowImsiReads(ClassLoader cl) {
-        final Class<?> tp;
-        try {
-            tp = XposedHelpers.findClass(
-                    "com.android.internal.telephony.TelephonyPermissions", cl);
-        } catch (Throwable t) {
-            Log.w(TAG, "TelephonyPermissions not found", t);
-            return;
-        }
-        XC_MethodHook grant = new XC_MethodHook() {
-            @Override
-            protected void beforeHookedMethod(MethodHookParam param) {
-                for (Object a : param.args) {
-                    if (TARGET.equals(a)) {          // callingPackage == our app
-                        param.setResult(Boolean.TRUE);
-                        return;
-                    }
-                }
-            }
-        };
-        for (String m : new String[]{
-                "checkCallingOrSelfReadDeviceIdentifiers",
-                "checkCallingOrSelfReadSubscriberIdentifiers"}) {
-            try {
-                XposedBridge.hookAllMethods(tp, m, grant);
-            } catch (Throwable t) {
-                Log.w(TAG, "grant hook failed: " + m, t);
-            }
-        }
-        Log.d(TAG, "IMSI reads allowed for " + TARGET);
     }
 
     /** Turn every overload of {@code clazz#method} into a no-op. */
