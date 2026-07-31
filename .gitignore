@@ -1,0 +1,28 @@
+# ---- Local toolset / research (NOT part of the public module) ----
+CLAUDE.md
+.claude/
+input/
+tools/
+decompiled/
+reference/
+
+# ---- Gradle / Android ----
+.gradle/
+build/
+local.properties
+captures/
+.externalNativeBuild/
+.cxx/
+*.apk
+*.aab
+*.log
+*.hprof
+output-metadata.json
+
+# ---- Keystores ----
+*.jks
+*.keystore
+
+# ---- IDE ----
+*.iml
+.idea/
