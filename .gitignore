@@ -23,7 +23,11 @@ output-metadata.json
 # ---- Keystores ----
 *.jks
 *.keystore
+keystore.properties
 
 # ---- IDE ----
 *.iml
 .idea/
+
+# ---- release artifacts (published to GitHub Releases) ----
+dist/
