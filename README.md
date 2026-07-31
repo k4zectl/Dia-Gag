@@ -14,6 +14,7 @@
   <img src="https://img.shields.io/badge/license-GPL--3.0-blue.svg" alt="License: GPL-3.0">
   <img src="https://img.shields.io/badge/target-net.omobio.dialogsc-orange.svg" alt="Target package">
   <img src="https://img.shields.io/badge/tested-18.6.1-green.svg" alt="Tested version">
+  <img src="https://img.shields.io/github/downloads/k4zectl/Dia-Gag/total.svg" alt="Total downloads">
 </p>
 
 ---
