@@ -69,7 +69,3 @@ Licensed under the [GNU GPL v3.0](LICENSE). Copyright (C) 2026 <a href="https://
 ## Author
 
 Built and maintained by <a href="https://www.k4ze.dev/" target="_blank" rel="noopener noreferrer"><b>K4ZE DEV</b></a> (GitHub [@k4zectl](https://github.com/k4zectl)).
-
-<p align="center">
-  <a href="https://www.k4ze.dev/" target="_blank" rel="noopener noreferrer">www.k4ze.dev</a>
-</p>

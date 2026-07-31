@@ -2,6 +2,14 @@ plugins {
     id 'com.android.application'
 }
 
+// Optional release signing: create keystore.properties (gitignored) to sign
+// release builds with a real key; without it, release falls back to debug signing.
+def ksPropsFile = rootProject.file('keystore.properties')
+def ksProps = new Properties()
+if (ksPropsFile.exists()) {
+    ksProps.load(new FileInputStream(ksPropsFile))
+}
+
 android {
     namespace 'dev.k4ze.diagag'
     compileSdk 35
@@ -10,14 +18,26 @@ android {
         applicationId "dev.k4ze.diagag"
         minSdk 26
         targetSdk 35
-        versionCode 1
-        versionName '0.1'
+        versionCode 10000
+        versionName '1.0.0'
+    }
+
+    signingConfigs {
+        if (ksPropsFile.exists()) {
+            release {
+                storeFile rootProject.file(ksProps['storeFile'])
+                storePassword ksProps['storePassword']
+                keyAlias ksProps['keyAlias']
+                keyPassword ksProps['keyPassword']
+            }
+        }
     }
 
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            signingConfig ksPropsFile.exists() ? signingConfigs.release : signingConfigs.debug
         }
     }
     compileOptions {
